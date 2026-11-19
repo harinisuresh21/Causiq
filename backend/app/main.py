@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
 from app.routers import incidents
-from app.models.incident import Incident, Evidence
+from app.models.incident import Incident, Evidence, IntegrationConfig, DeploymentRecord
 from app.data.demo_scenarios.scenarios import SCENARIOS
 import json
 import datetime
@@ -11,9 +11,9 @@ import datetime
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="RootCause AI Core API",
+    title="Causiq AI Core API",
     description="Autonomous Software Incident Investigator Core Engine",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # CORS configuration for Frontend
@@ -28,10 +28,31 @@ app.add_middleware(
 app.include_router(incidents.router)
 
 @app.on_event("startup")
-def preload_default_incidents():
-    """Seed initial demo incidents so the dashboard has immediate rich data."""
+def preload_default_data():
+    """Seed initial demo incidents and integration registry."""
     db = SessionLocal()
     try:
+        # Seed Integrations
+        if db.query(IntegrationConfig).count() == 0:
+            defaults = [
+                IntegrationConfig(id="github", name="GitHub", description="Correlate commit SHAs, file diffs, author metadata, and repository releases.", status="connected", permissions="repo:read, commit:read", is_simulated=False),
+                IntegrationConfig(id="cloudwatch", name="AWS CloudWatch", description="Ingest RDS metrics, latency alarms, and target response time telemetry.", status="simulated", permissions="cloudwatch:GetMetricData, DescribeAlarms", is_simulated=True),
+                IntegrationConfig(id="docker", name="Docker Engine", description="Inspect container crash signals, OOMKilled events, and container lifecycle transitions.", status="simulated", permissions="docker.sock:ro", is_simulated=True),
+                IntegrationConfig(id="jenkins", name="Jenkins CI/CD", description="Track production pipeline deployments, build artifacts, and release jobs.", status="simulated", permissions="job:read, build:read", is_simulated=True),
+                IntegrationConfig(id="prometheus", name="Prometheus & Alertmanager", description="Query high-frequency metrics, threshold alerts, and service saturations.", status="simulated", permissions="api/v1/query, alerts:read", is_simulated=True),
+            ]
+            db.add_all(defaults)
+
+        # Seed Deployments
+        if db.query(DeploymentRecord).count() == 0:
+            deps = [
+                DeploymentRecord(id="DEP-412", service="API Gateway", commit="a7b8c9d", environment="Production", author="dev-lead", status="success", deployed_at=datetime.datetime.utcnow() - datetime.timedelta(minutes=30)),
+                DeploymentRecord(id="DEP-411", service="Authentication Service", commit="f1e2d3c", environment="Production", author="sre-dev", status="success", deployed_at=datetime.datetime.utcnow() - datetime.timedelta(hours=1)),
+                DeploymentRecord(id="DEP-410", service="Database Migration 0082", commit="4b92e10", environment="Production", author="db-admin", status="success", deployed_at=datetime.datetime.utcnow() - datetime.timedelta(hours=2)),
+                DeploymentRecord(id="DEP-409", service="Payment Service", commit="90e1fa2", environment="Staging", author="payment-eng", status="success", deployed_at=datetime.datetime.utcnow() - datetime.timedelta(days=1)),
+            ]
+            db.add_all(deps)
+
         count = db.query(Incident).count()
         if count == 0:
             # Seed Scenario 1 as an active incident
@@ -91,6 +112,6 @@ def preload_default_incidents():
                     is_simulated=True
                 ))
 
-            db.commit()
+        db.commit()
     finally:
         db.close()

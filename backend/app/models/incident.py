@@ -76,10 +76,22 @@ class VerificationRecord(Base):
 class IntegrationConfig(Base):
     __tablename__ = "integration_configs"
 
-    id = Column(String, primary_key=True, index=True) # github, aws, docker, jenkins, prometheus
+    id = Column(String, primary_key=True, index=True) # github, cloudwatch, docker, jenkins, prometheus
     name = Column(String, nullable=False)
     status = Column(String, default="disconnected") # connected, disconnected, simulated
     description = Column(Text, nullable=True)
     last_sync = Column(DateTime, nullable=True)
     permissions = Column(String, nullable=True)
-    config_data = Column(Text, default="{}") # encrypted or redacted configs
+    is_simulated = Column(Boolean, default=False)
+    config_data = Column(Text, default="{}") # JSON config e.g. token, endpoint, aws_region
+
+class DeploymentRecord(Base):
+    __tablename__ = "deployment_records"
+
+    id = Column(String, primary_key=True, index=True) # DEP-xxx
+    service = Column(String, nullable=False)
+    commit = Column(String, nullable=False)
+    environment = Column(String, default="Production")
+    author = Column(String, default="dev-lead")
+    status = Column(String, default="success") # success, failed
+    deployed_at = Column(DateTime, default=datetime.datetime.utcnow)

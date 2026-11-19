@@ -11,20 +11,34 @@ class GitHubService:
     def get_headers(self) -> Dict[str, str]:
         headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "RootCause-AI-Agent"
+            "User-Agent": "Causiq-AI-Agent"
         }
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
         return headers
 
+    async def verify_token(self) -> Dict[str, Any]:
+        """Test authentication against GitHub API."""
+        if not self.token:
+            return {"valid": False, "username": None, "error": "No token provided"}
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                res = await client.get(f"{self.BASE_URL}/user", headers=self.get_headers())
+                if res.status_code == 200:
+                    data = res.json()
+                    return {"valid": True, "username": data.get("login"), "name": data.get("name")}
+                return {"valid": False, "username": None, "error": f"GitHub returned HTTP {res.status_code}"}
+        except Exception as e:
+            return {"valid": False, "username": None, "error": str(e)}
+
     async def get_repositories(self) -> List[Dict[str, Any]]:
-        """Fetch repositories accessible via token, or return demo repos if no live token."""
+        """Fetch repositories live from GitHub API if authenticated, else return demo repos."""
         if not self.token:
             return self._demo_repositories()
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.get(f"{self.BASE_URL}/user/repos?sort=updated&per_page=10", headers=self.get_headers())
+                res = await client.get(f"{self.BASE_URL}/user/repos?sort=updated&per_page=12", headers=self.get_headers())
                 if res.status_code == 200:
                     repos = res.json()
                     return [
@@ -43,13 +57,13 @@ class GitHubService:
             return self._demo_repositories()
 
     async def get_commits(self, owner: str = "rootcause-ai", repo: str = "auth-service") -> List[Dict[str, Any]]:
-        """Fetch commits from repo or fallback to simulated commits."""
+        """Fetch commits live from GitHub API if authenticated, else fallback to simulated commits."""
         if not self.token:
             return self._demo_commits()
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                url = f"{self.BASE_URL}/repos/{owner}/{repo}/commits?per_page=5"
+                url = f"{self.BASE_URL}/repos/{owner}/{repo}/commits?per_page=8"
                 res = await client.get(url, headers=self.get_headers())
                 if res.status_code == 200:
                     commits = res.json()

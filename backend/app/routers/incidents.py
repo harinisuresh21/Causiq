@@ -1,12 +1,12 @@
 import json
 import uuid
 import datetime
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from app.database import get_db
-from app.models.incident import Incident, Evidence, Investigation, VerificationRecord, IntegrationConfig
+from app.models.incident import Incident, Evidence, Investigation, VerificationRecord, IntegrationConfig, DeploymentRecord
 from app.schemas.incident import (
     IncidentCreateRequest, IncidentResponse, EvidenceItem,
     VerificationRequest, VerificationResultResponse,
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api")
 def get_health():
     return {
         "status": "healthy",
-        "service": "RootCause AI Core",
+        "service": "Causiq AI Core",
         "timestamp": datetime.datetime.utcnow().isoformat(),
         "version": "1.0.0"
     }
@@ -38,29 +38,58 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     critical = db.query(Incident).filter(Incident.severity == "critical").count()
     resolved = db.query(Incident).filter(Incident.status == "resolved").count()
 
-    services_health = [
-        {"name": "API Gateway", "status": "healthy", "error_rate": "0.02%", "response_time": "38ms", "last_updated": "Just now"},
-        {"name": "Authentication Service", "status": "degraded" if active > 0 else "healthy", "error_rate": "4.8%" if active > 0 else "0.01%", "response_time": "120ms", "last_updated": "Just now"},
-        {"name": "Payment Service", "status": "healthy", "error_rate": "0.00%", "response_time": "85ms", "last_updated": "1 min ago"},
-        {"name": "Database Cluster", "status": "degraded" if active > 0 else "healthy", "error_rate": "1.2%" if active > 0 else "0.00%", "response_time": "92ms", "last_updated": "Just now"},
-        {"name": "Background Worker", "status": "healthy", "error_rate": "0.05%", "response_time": "210ms", "last_updated": "2 mins ago"},
-    ]
+    # Dynamic service health derived from active incidents
+    active_incidents = db.query(Incident).filter(Incident.status.in_(["investigating", "identified", "verifying"])).all()
+    affected_services_set = set()
+    for inc in active_incidents:
+        try:
+            services = json.loads(inc.affected_services) if inc.affected_services else []
+            affected_services_set.update(services)
+        except Exception:
+            pass
 
-    deployments = [
-        {"id": "DEP-412", "service": "API Gateway", "commit": "a7b8c9d", "environment": "Production", "time": "10:00 AM", "author": "dev-lead", "status": "success"},
-        {"id": "DEP-411", "service": "Authentication Service", "commit": "f1e2d3c", "environment": "Production", "time": "09:45 AM", "author": "sre-dev", "status": "success"},
-        {"id": "DEP-410", "service": "Database Migration 0082", "commit": "4b92e10", "environment": "Production", "time": "09:10 AM", "author": "db-admin", "status": "success"},
-        {"id": "DEP-409", "service": "Payment Service", "commit": "90e1fa2", "environment": "Staging", "time": "Yesterday", "author": "payment-eng", "status": "success"},
-    ]
+    services_list = ["API Gateway", "Authentication Service", "Payment Service", "Database", "Background Worker"]
+    services_health = []
+    for svc in services_list:
+        is_affected = any(svc.lower() in aff.lower() or aff.lower() in svc.lower() for aff in affected_services_set)
+        services_health.append({
+            "name": svc,
+            "status": "degraded" if is_affected else "healthy",
+            "error_rate": "3.84%" if is_affected else "0.01%",
+            "response_time": "1840ms" if is_affected else "38ms",
+            "last_updated": "Just now"
+        })
 
-    trend = [
-        {"time": "06:00", "critical": 0, "high": 1, "resolved": 2},
-        {"time": "08:00", "critical": 0, "high": 2, "resolved": 3},
-        {"time": "10:00", "critical": 2, "high": 3, "resolved": 1},
-        {"time": "12:00", "critical": 1, "high": 1, "resolved": 4},
-        {"time": "14:00", "critical": 1, "high": 2, "resolved": 3},
-        {"time": "Now", "critical": critical, "high": active, "resolved": resolved},
-    ]
+    # Pull deployments from DB
+    deps = db.query(DeploymentRecord).order_by(DeploymentRecord.deployed_at.desc()).limit(6).all()
+    deployments = []
+    for d in deps:
+        deployments.append({
+            "id": d.id,
+            "service": d.service,
+            "commit": d.commit,
+            "environment": d.environment,
+            "time": d.deployed_at.strftime("%I:%M %p"),
+            "author": d.author,
+            "status": d.status
+        })
+
+    # Dynamic incident trend calculation
+    now = datetime.datetime.utcnow()
+    trend = []
+    for hours_ago in range(5, -1, -1):
+        window_start = now - datetime.timedelta(hours=hours_ago + 1)
+        window_end = now - datetime.timedelta(hours=hours_ago)
+        crit_count = db.query(Incident).filter(Incident.severity == "critical", Incident.created_at <= window_end).count()
+        res_count = db.query(Incident).filter(Incident.status == "resolved", Incident.resolved_at <= window_end).count()
+        high_count = db.query(Incident).filter(Incident.severity.in_(["high", "medium"]), Incident.created_at <= window_end).count()
+        label = window_end.strftime("%H:%M") if hours_ago > 0 else "Now"
+        trend.append({
+            "time": label,
+            "critical": crit_count,
+            "high": high_count,
+            "resolved": res_count
+        })
 
     return {
         "metrics": {
@@ -77,71 +106,98 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
 @router.get("/integrations")
 def get_integrations(db: Session = Depends(get_db)):
-    # Standard integration cards
-    return [
-        {
-            "id": "github",
-            "name": "GitHub",
-            "description": "Correlate commit SHAs, file diffs, author metadata, and repository releases.",
-            "status": "connected",
-            "last_sync": "2 mins ago",
-            "permissions": "repo:read, commit:read",
-            "is_simulated": False
-        },
-        {
-            "id": "cloudwatch",
-            "name": "AWS CloudWatch",
-            "description": "Ingest RDS metrics, latency alarms, and target response time telemetry.",
-            "status": "simulated",
-            "last_sync": "1 min ago",
-            "permissions": "cloudwatch:GetMetricData, DescribeAlarms",
-            "is_simulated": True
-        },
-        {
-            "id": "docker",
-            "name": "Docker Engine",
-            "description": "Inspect container crash signals, OOMKilled events, and container lifecycle transitions.",
-            "status": "simulated",
-            "last_sync": "Just now",
-            "permissions": "docker.sock:ro",
-            "is_simulated": True
-        },
-        {
-            "id": "jenkins",
-            "name": "Jenkins CI/CD",
-            "description": "Track production pipeline deployments, build artifacts, and release jobs.",
-            "status": "simulated",
-            "last_sync": "10 mins ago",
-            "permissions": "job:read, build:read",
-            "is_simulated": True
-        },
-        {
-            "id": "prometheus",
-            "name": "Prometheus & Alertmanager",
-            "description": "Query high-frequency metrics, threshold alerts, and service saturations.",
-            "status": "simulated",
-            "last_sync": "Just now",
-            "permissions": "api/v1/query, alerts:read",
-            "is_simulated": True
-        }
-    ]
+    configs = db.query(IntegrationConfig).all()
+    if not configs:
+        # Default initialization
+        defaults = [
+            IntegrationConfig(id="github", name="GitHub", description="Correlate commit SHAs, file diffs, author metadata, and repository releases.", status="connected", permissions="repo:read, commit:read", is_simulated=False),
+            IntegrationConfig(id="cloudwatch", name="AWS CloudWatch", description="Ingest RDS metrics, latency alarms, and target response time telemetry.", status="simulated", permissions="cloudwatch:GetMetricData, DescribeAlarms", is_simulated=True),
+            IntegrationConfig(id="docker", name="Docker Engine", description="Inspect container crash signals, OOMKilled events, and container lifecycle transitions.", status="simulated", permissions="docker.sock:ro", is_simulated=True),
+            IntegrationConfig(id="jenkins", name="Jenkins CI/CD", description="Track production pipeline deployments, build artifacts, and release jobs.", status="simulated", permissions="job:read, build:read", is_simulated=True),
+            IntegrationConfig(id="prometheus", name="Prometheus & Alertmanager", description="Query high-frequency metrics, threshold alerts, and service saturations.", status="simulated", permissions="api/v1/query, alerts:read", is_simulated=True),
+        ]
+        db.add_all(defaults)
+        db.commit()
+        configs = db.query(IntegrationConfig).all()
+
+    out = []
+    for c in configs:
+        out.append({
+            "id": c.id,
+            "name": c.name,
+            "description": c.description,
+            "status": c.status,
+            "last_sync": c.last_sync.strftime("%I:%M %p") if c.last_sync else "Continuous",
+            "permissions": c.permissions,
+            "is_simulated": c.is_simulated
+        })
+    return out
 
 @router.post("/integrations/github/connect")
-def connect_github(req: GitHubConnectRequest, db: Session = Depends(get_db)):
-    return {
-        "status": "connected",
-        "message": "GitHub authenticated successfully with read-only commit access.",
-        "owner": req.owner or "authenticated-user"
-    }
+async def connect_github(req: GitHubConnectRequest, db: Session = Depends(get_db)):
+    svc = GitHubService(token=req.token)
+    verify_result = await svc.verify_token()
+    
+    gh_cfg = db.query(IntegrationConfig).filter(IntegrationConfig.id == "github").first()
+    if not gh_cfg:
+        gh_cfg = IntegrationConfig(id="github", name="GitHub")
+        db.add(gh_cfg)
+
+    if verify_result.get("valid"):
+        gh_cfg.status = "connected"
+        gh_cfg.is_simulated = False
+        gh_cfg.last_sync = datetime.datetime.utcnow()
+        gh_cfg.config_data = json.dumps({"token": req.token, "username": verify_result.get("username")})
+        db.commit()
+        return {
+            "status": "connected",
+            "message": f"Successfully authenticated as @{verify_result.get('username')} via live GitHub API.",
+            "is_simulated": False
+        }
+    else:
+        # Fallback to simulated demo connection with clear messaging
+        gh_cfg.status = "connected"
+        gh_cfg.is_simulated = True
+        gh_cfg.last_sync = datetime.datetime.utcnow()
+        gh_cfg.config_data = json.dumps({"token": req.token, "simulated": True})
+        db.commit()
+        return {
+            "status": "connected",
+            "message": "Token accepted in Sandboxed Demo Mode. Live GitHub verification notice: " + (verify_result.get("error") or "Unreachable, using simulated repositories."),
+            "is_simulated": True
+        }
+
+@router.post("/integrations/{integration_id}/disconnect")
+def disconnect_integration(integration_id: str, db: Session = Depends(get_db)):
+    cfg = db.query(IntegrationConfig).filter(IntegrationConfig.id == integration_id).first()
+    if cfg:
+        cfg.status = "disconnected"
+        cfg.config_data = "{}"
+        db.commit()
+    return {"status": "disconnected", "id": integration_id}
 
 @router.get("/integrations/github/repositories")
-async def get_github_repos():
-    svc = GitHubService()
+async def get_github_repos(db: Session = Depends(get_db)):
+    gh_cfg = db.query(IntegrationConfig).filter(IntegrationConfig.id == "github").first()
+    token = None
+    if gh_cfg and gh_cfg.config_data:
+        try:
+            token = json.loads(gh_cfg.config_data).get("token")
+        except Exception:
+            pass
+    svc = GitHubService(token=token)
     return await svc.get_repositories()
 
 @router.get("/integrations/github/commits")
-async def get_github_commits(owner: str = "rootcause-ai", repo: str = "auth-service"):
-    svc = GitHubService()
+async def get_github_commits(owner: str = "rootcause-ai", repo: str = "auth-service", db: Session = Depends(get_db)):
+    gh_cfg = db.query(IntegrationConfig).filter(IntegrationConfig.id == "github").first()
+    token = None
+    if gh_cfg and gh_cfg.config_data:
+        try:
+            token = json.loads(gh_cfg.config_data).get("token")
+        except Exception:
+            pass
+    svc = GitHubService(token=token)
     return await svc.get_commits(owner, repo)
 
 @router.get("/scenarios")
@@ -152,7 +208,6 @@ def get_demo_scenarios():
 def create_incident(req: IncidentCreateRequest, db: Session = Depends(get_db)):
     inc_id = f"INC-{uuid.uuid4().hex[:6].upper()}"
     
-    # Check if demo scenario was picked
     is_demo = False
     events_to_add = []
     
@@ -187,14 +242,24 @@ def create_incident(req: IncidentCreateRequest, db: Session = Depends(get_db)):
     db.add(incident)
     db.flush()
 
-    # Add evidence events
     for ev in events_to_add:
+        dt = datetime.datetime.utcnow()
+        if "T" in ev.get("timestamp", ""):
+            try:
+                dt = datetime.datetime.fromisoformat(ev.get("timestamp").replace("Z", "+00:00"))
+            except Exception:
+                pass
+
+        # Ensure unique evidence ID per incident to avoid collision across repeated demo scenario launches
+        raw_ev_id = ev.get("event_id") or "EV"
+        evidence_unique_id = f"{inc_id}-{raw_ev_id}" if is_demo else (ev.get("event_id") or f"EV-{uuid.uuid4().hex[:6].upper()}")
+
         evidence_record = Evidence(
-            id=ev.get("event_id") or f"EV-{uuid.uuid4().hex[:6].upper()}",
+            id=evidence_unique_id,
             incident_id=inc_id,
             source=ev.get("source", "manual"),
             service=ev.get("service", affected[0] if affected else "unknown"),
-            timestamp=datetime.datetime.fromisoformat(ev.get("timestamp").replace("Z", "+00:00")) if "T" in ev.get("timestamp", "") else datetime.datetime.utcnow(),
+            timestamp=dt,
             severity=ev.get("severity", "info"),
             event_type=ev.get("event_type", "event"),
             description=ev.get("description", ""),
@@ -302,7 +367,6 @@ def investigate_incident(incident_id: str, db: Session = Depends(get_db)):
 def get_incident_investigation(incident_id: str, db: Session = Depends(get_db)):
     inv = db.query(Investigation).filter(Investigation.incident_id == incident_id).first()
     if not inv:
-        # If no investigation yet, execute one
         return execute_investigation(incident_id, db)
 
     return {
@@ -359,11 +423,13 @@ def get_evidence_graph(incident_id: str, db: Session = Depends(get_db)):
         })
     sorted_ev = build_chronological_timeline(timeline)
 
-    # Generate nodes & edges
     nodes = []
     edges = []
     
+    # 2D Grid / Flow positioning
     for idx, ev in enumerate(sorted_ev):
+        col = idx % 2
+        row = idx // 2
         nodes.append({
             "id": ev["event_id"],
             "type": "evidenceNode",
@@ -376,7 +442,7 @@ def get_evidence_graph(incident_id: str, db: Session = Depends(get_db)):
                 "timestamp": ev["timestamp"],
                 "is_simulated": ev["is_simulated"]
             },
-            "position": {"x": 250, "y": idx * 140 + 40}
+            "position": {"x": 80 + col * 360, "y": 50 + row * 180}
         })
         if idx > 0:
             edges.append({
@@ -384,7 +450,7 @@ def get_evidence_graph(incident_id: str, db: Session = Depends(get_db)):
                 "source": sorted_ev[idx-1]["event_id"],
                 "target": ev["event_id"],
                 "animated": True,
-                "label": "Preceded / Correlated"
+                "label": "Correlated"
             })
 
     return {"nodes": nodes, "edges": edges}

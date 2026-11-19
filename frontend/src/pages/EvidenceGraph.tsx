@@ -1,31 +1,129 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Network, ZoomIn, ZoomOut, ArrowRight, ShieldAlert, Cpu, GitCommit, Server, RefreshCw, Zap, AlertTriangle } from 'lucide-react';
+import {
+  ReactFlow,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  Node,
+  Edge,
+  Handle,
+  Position,
+  NodeProps,
+  BackgroundVariant
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import {
+  Network,
+  Cpu,
+  GitCommit,
+  Server,
+  RefreshCw,
+  AlertTriangle,
+  Layers,
+  Activity,
+  Terminal,
+  ExternalLink,
+  ShieldAlert
+} from 'lucide-react';
 import { api } from '../services/api';
 import { Incident } from '../types';
 
-interface GraphNode {
-  id: string;
-  type: string;
-  data: {
-    label: string;
-    service: string;
-    source: string;
-    description: string;
-    severity: string;
-    timestamp: string;
-    is_simulated: boolean;
-  };
-  position: { x: number; y: number };
+interface EvidenceNodeData {
+  label: string;
+  service: string;
+  source: string;
+  description: string;
+  severity: string;
+  timestamp: string;
+  is_simulated: boolean;
+  [key: string]: unknown;
 }
+
+// Custom interactive Node Component for React Flow
+const EvidenceNodeComponent: React.FC<NodeProps<Node<EvidenceNodeData>>> = ({ data, selected }) => {
+  const isCritical = data.severity === 'critical' || data.severity === 'error';
+  const isWarning = data.severity === 'warning';
+
+  function getNodeIcon() {
+    switch (data.source) {
+      case 'github': return GitCommit;
+      case 'cloudwatch': return Server;
+      case 'docker': return RefreshCw;
+      case 'jenkins': return Terminal;
+      default: return AlertTriangle;
+    }
+  }
+
+  const Icon = getNodeIcon();
+
+  return (
+    <div
+      className={`p-3.5 rounded-xl border transition-all w-72 backdrop-blur-md cursor-pointer ${
+        selected
+          ? 'bg-[#18233c] border-violet-500 shadow-xl shadow-violet-500/25 ring-2 ring-violet-500/50'
+          : 'bg-[#111726]/95 border-[#1f2b48] hover:border-gray-500'
+      }`}
+    >
+      <Handle type="target" position={Position.Top} className="!bg-violet-400 !w-2.5 !h-2.5" />
+      
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-lg ${isCritical ? 'bg-rose-500/20 text-rose-400' : isWarning ? 'bg-amber-500/20 text-amber-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
+            <Icon className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-white leading-tight">{data.label}</div>
+            <div className="text-[10px] text-gray-400 font-mono">{data.service}</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <span
+            className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold ${
+              isCritical
+                ? 'bg-rose-500/20 text-rose-300'
+                : isWarning
+                ? 'bg-amber-500/20 text-amber-300'
+                : 'bg-cyan-500/20 text-cyan-300'
+            }`}
+          >
+            {data.severity.toUpperCase()}
+          </span>
+          {data.is_simulated && (
+            <span className="text-[8px] bg-cyan-500/10 text-cyan-400 px-1 py-0.5 rounded font-mono">
+              DEMO
+            </span>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[11px] text-gray-300 leading-snug line-clamp-2 mt-1">
+        {data.description}
+      </p>
+
+      <div className="mt-2 pt-1.5 border-t border-[#1e2a44] flex items-center justify-between text-[9px] text-gray-500 font-mono">
+        <span>{data.source.toUpperCase()}</span>
+        <span>{new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="!bg-indigo-400 !w-2.5 !h-2.5" />
+    </div>
+  );
+};
 
 export const EvidenceGraph: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string>('');
-  const [nodes, setNodes] = useState<GraphNode[]>([]);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<EvidenceNodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [selectedNodeData, setSelectedNodeData] = useState<EvidenceNodeData | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string>('');
   const [loading, setLoading] = useState(true);
+
+  const nodeTypes = useMemo(() => ({ evidenceNode: EvidenceNodeComponent }), []);
 
   useEffect(() => {
     async function load() {
@@ -39,14 +137,7 @@ export const EvidenceGraph: React.FC = () => {
         setSelectedIncidentId(activeId);
 
         if (activeId) {
-          const graphData = await api.getEvidenceGraph(activeId);
-          setNodes(graphData.nodes || []);
-          if (highlightId) {
-            const match = graphData.nodes?.find((n: GraphNode) => n.id === highlightId);
-            if (match) setSelectedNode(match);
-          } else if (graphData.nodes?.length > 0) {
-            setSelectedNode(graphData.nodes[0]);
-          }
+          await loadGraph(activeId, highlightId);
         }
       } catch (err) {
         console.error('Failed to load evidence graph:', err);
@@ -57,28 +148,53 @@ export const EvidenceGraph: React.FC = () => {
     load();
   }, [searchParams]);
 
-  async function handleIncidentChange(id: string) {
-    setSelectedIncidentId(id);
-    setLoading(true);
+  async function loadGraph(id: string, highlightId?: string | null) {
     try {
       const graphData = await api.getEvidenceGraph(id);
-      setNodes(graphData.nodes || []);
-      setSelectedNode(graphData.nodes?.[0] || null);
+      const formattedNodes: Node<EvidenceNodeData>[] = (graphData.nodes || []).map((n: any) => ({
+        id: n.id,
+        type: 'evidenceNode',
+        position: n.position || { x: 100, y: 100 },
+        data: n.data
+      }));
+
+      const formattedEdges: Edge[] = (graphData.edges || []).map((e: any) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        animated: true,
+        style: { stroke: '#8b5cf6', strokeWidth: 2 },
+        label: e.label || 'Correlated',
+        labelStyle: { fill: '#94a3b8', fontSize: 10, fontFamily: 'monospace' },
+        labelBgStyle: { fill: '#0c1220', rx: 4, ry: 4 }
+      }));
+
+      setNodes(formattedNodes);
+      setEdges(formattedEdges);
+
+      if (highlightId) {
+        const match = formattedNodes.find((n) => n.id === highlightId);
+        if (match) {
+          setSelectedNodeData(match.data);
+          setSelectedNodeId(match.id);
+        }
+      } else if (formattedNodes.length > 0) {
+        setSelectedNodeData(formattedNodes[0].data);
+        setSelectedNodeId(formattedNodes[0].id);
+      }
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   }
 
-  function getNodeIcon(source: string) {
-    switch (source) {
-      case 'github': return GitCommit;
-      case 'cloudwatch': return Server;
-      case 'docker': return RefreshCw;
-      case 'jenkins': return Cpu;
-      default: return AlertTriangle;
-    }
+  const onNodeClick = useCallback((_: any, node: Node<EvidenceNodeData>) => {
+    setSelectedNodeData(node.data);
+    setSelectedNodeId(node.id);
+  }, []);
+
+  async function handleIncidentChange(id: string) {
+    setSelectedIncidentId(id);
+    await loadGraph(id);
   }
 
   return (
@@ -101,83 +217,32 @@ export const EvidenceGraph: React.FC = () => {
           </select>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span className="w-2 h-2 rounded-full bg-violet-400"></span>
-          <span>{nodes.length} Correlated Nodes</span>
+        <div className="flex items-center gap-4 text-xs text-gray-400">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse"></span>
+            <span>{nodes.length} Correlated Nodes (React Flow Dynamic Graph)</span>
+          </span>
+          <span className="text-[11px] text-gray-500 font-mono">Drag nodes • Pan canvas • Click to inspect</span>
         </div>
       </div>
 
-      {/* Main Graph Area & Right Inspector */}
+      {/* Main Flow Canvas & Side Inspector */}
       <div className="flex-1 flex overflow-hidden">
         {/* Canvas Area */}
-        <div className="flex-1 bg-[#090d16] p-8 overflow-y-auto relative flex flex-col items-center">
-          <div className="w-full max-w-2xl space-y-4 py-4">
-            {nodes.map((node, idx) => {
-              const Icon = getNodeIcon(node.data.source);
-              const isSelected = selectedNode?.id === node.id;
-              const isCritical = node.data.severity === 'critical' || node.data.severity === 'error';
-
-              return (
-                <div key={node.id} className="relative flex flex-col items-center">
-                  {/* Node Card */}
-                  <div
-                    onClick={() => setSelectedNode(node)}
-                    className={`w-full p-4 rounded-xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#18233c] border-violet-500 shadow-lg shadow-violet-500/20 scale-[1.02]'
-                        : 'bg-[#111726] border-[#1f2b48] hover:border-gray-600'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-1.5 rounded-lg ${isCritical ? 'bg-rose-500/20 text-rose-400' : 'bg-cyan-500/20 text-cyan-400'}`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-xs font-bold text-white">{node.data.label}</span>
-                          <span className="text-[10px] text-gray-400 block font-mono">
-                            {node.data.service} • {node.data.source.toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e2a44] text-violet-300 font-semibold">
-                          {node.id}
-                        </span>
-                        {node.data.is_simulated && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
-                            DEMO
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-gray-300 leading-relaxed line-clamp-2">
-                      {node.data.description}
-                    </p>
-
-                    <div className="mt-2 pt-2 border-t border-[#1e2a44] flex items-center justify-between text-[10px] text-gray-500">
-                      <span>{new Date(node.data.timestamp).toLocaleTimeString()}</span>
-                      <span className={`font-semibold ${isCritical ? 'text-rose-400' : 'text-gray-400'}`}>
-                        {node.data.severity.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Flow Arrow */}
-                  {idx < nodes.length - 1 && (
-                    <div className="my-2 flex flex-col items-center text-violet-400/60">
-                      <div className="h-6 w-0.5 bg-gradient-to-b from-violet-500 to-indigo-500"></div>
-                      <div className="text-[10px] font-mono tracking-wide py-0.5 text-gray-400">
-                        Preceded / Correlated
-                      </div>
-                      <div className="h-2 w-0.5 bg-indigo-500"></div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        <div className="flex-1 bg-[#070b14] relative">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={onNodeClick}
+            fitView
+            className="bg-[#070b14]"
+          >
+            <Background color="#1e293b" gap={20} size={1} variant={BackgroundVariant.Dots} />
+            <Controls className="!bg-[#111726] !border-[#1f2b48] !fill-gray-300" />
+          </ReactFlow>
         </div>
 
         {/* Right Inspector Drawer */}
@@ -187,51 +252,51 @@ export const EvidenceGraph: React.FC = () => {
             Evidence Inspector
           </h3>
 
-          {selectedNode ? (
+          {selectedNodeData ? (
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-[#111726] border border-[#1f2b48] space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-violet-400">{selectedNode.id}</span>
+                  <span className="text-xs font-mono font-bold text-violet-400">{selectedNodeId}</span>
                   <span
                     className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                      selectedNode.data.severity === 'critical' || selectedNode.data.severity === 'error'
+                      selectedNodeData.severity === 'critical' || selectedNodeData.severity === 'error'
                         ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                         : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                     }`}
                   >
-                    {selectedNode.data.severity.toUpperCase()}
+                    {selectedNodeData.severity.toUpperCase()}
                   </span>
                 </div>
 
                 <div>
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Event Source & Service</div>
                   <div className="text-xs font-semibold text-white">
-                    {selectedNode.data.source.toUpperCase()} → {selectedNode.data.service}
+                    {selectedNodeData.source.toUpperCase()} → {selectedNodeData.service}
                   </div>
                 </div>
 
                 <div>
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Timestamp</div>
-                  <div className="text-xs font-mono text-gray-300">{selectedNode.data.timestamp}</div>
+                  <div className="text-xs font-mono text-gray-300">{selectedNodeData.timestamp}</div>
                 </div>
 
                 <div>
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Raw Telemetry Description</div>
                   <p className="text-xs font-mono text-gray-200 mt-1 leading-relaxed bg-[#090d16] p-2.5 rounded border border-[#1e2a44]">
-                    {selectedNode.data.description}
+                    {selectedNodeData.description}
                   </p>
                 </div>
 
                 <div>
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Why Event is Relevant</div>
                   <p className="text-xs text-gray-300 mt-1 leading-relaxed">
-                    This event establishes temporal and causal correlation within the failure blast radius, indicating downstream dependency disruption.
+                    This event establishes temporal and causal correlation within the failure blast radius, directly impacting downstream dependencies.
                   </p>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-xs text-gray-500 text-center py-10">Select a node to inspect evidence attributes.</div>
+            <div className="text-xs text-gray-500 text-center py-10">Select a node in the graph to inspect evidence attributes.</div>
           )}
         </div>
       </div>

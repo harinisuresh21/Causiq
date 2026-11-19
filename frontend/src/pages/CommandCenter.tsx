@@ -77,8 +77,8 @@ export const CommandCenter: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/investigations?action=new')}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-violet-600/20 transition-all cursor-pointer"
+            onClick={() => navigate('/app/investigations?action=new')}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-violet-600/25 transition-all cursor-pointer ring-1 ring-white/10"
           >
             <PlusCircle className="w-4 h-4" />
             Start Investigation
@@ -235,8 +235,8 @@ export const CommandCenter: React.FC = () => {
               Active Incident Feed
             </h2>
             <button
-              onClick={() => navigate('/history')}
-              className="text-xs text-violet-400 hover:text-violet-300 font-medium flex items-center gap-1"
+              onClick={() => navigate('/app/history')}
+              className="text-xs text-violet-400 hover:text-violet-300 font-semibold flex items-center gap-1"
             >
               View all <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
@@ -246,7 +246,7 @@ export const CommandCenter: React.FC = () => {
             {incidents.slice(0, 3).map((inc) => (
               <div
                 key={inc.id}
-                onClick={() => navigate(`/investigations?id=${inc.id}`)}
+                onClick={() => navigate(`/app/investigations?id=${inc.id}`)}
                 className="p-3.5 rounded-lg bg-[#141c30] border border-[#212f4d] hover:border-violet-500/50 cursor-pointer transition-all flex items-start justify-between group"
               >
                 <div>

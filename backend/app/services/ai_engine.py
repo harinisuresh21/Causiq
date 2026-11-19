@@ -10,7 +10,7 @@ from app.schemas.incident import InvestigationResultSchema, HypothesisItem, Reme
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
-You are RootCause AI, a senior Site Reliability Engineer and software debugging specialist.
+You are Causiq, an autonomous Site Reliability Engineer and software debugging intelligence.
 You analyze normalized software failure evidence across source code commits, deployment events, application logs, container lifecycle events, and infrastructure metrics.
 
 IMPORTANT RULES:

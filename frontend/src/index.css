@@ -4,10 +4,33 @@
 
 @layer base {
   body {
-    background-color: #090d16;
+    background-color: #060913;
     color: #e2e8f0;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
   }
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(13, 19, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(31, 43, 72, 0.6);
+}
+
+.glass-panel-glow {
+  background: rgba(13, 19, 34, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.15);
+}
+
+/* Radial Gradient Background Accents */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
 
 /* Custom scrollbars */
@@ -16,12 +39,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d1322;
+  background: #090d18;
 }
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #38455d;
 }

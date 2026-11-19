@@ -301,7 +301,7 @@ export const Investigations: React.FC = () => {
                   {investigationData.result.supporting_evidence.map((evId) => (
                     <span
                       key={evId}
-                      onClick={() => navigate(`/evidence-graph?highlight=${evId}`)}
+                      onClick={() => navigate(`/app/evidence-graph?highlight=${evId}`)}
                       className="px-2.5 py-0.5 rounded-md bg-[#18233c] hover:bg-violet-600/30 text-violet-300 border border-violet-500/30 text-xs font-mono font-semibold cursor-pointer transition-colors"
                     >
                       {evId}
@@ -356,7 +356,7 @@ export const Investigations: React.FC = () => {
                       Remediation Playbook (Human-in-the-Loop)
                     </h3>
                     <button
-                      onClick={() => navigate(`/fix-verify?id=${selectedIncidentId}`)}
+                      onClick={() => navigate(`/app/fix-verify?id=${selectedIncidentId}`)}
                       className="text-xs text-violet-400 hover:text-violet-300 font-medium flex items-center gap-1"
                     >
                       Remediate <ArrowRight className="w-3.5 h-3.5" />
@@ -433,9 +433,9 @@ export const Investigations: React.FC = () => {
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#111726] border border-[#212f4d] rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div>
-              <h2 className="text-lg font-bold text-white">Start a New Investigation</h2>
+              <h2 className="text-lg font-bold text-white">Start a New Causiq Investigation</h2>
               <p className="text-xs text-gray-400 mt-1">
-                Bring your engineering evidence together. Let RootCause AI investigate.
+                Bring your engineering evidence together. Let Causiq AI investigate.
               </p>
             </div>
 
