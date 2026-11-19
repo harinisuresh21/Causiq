@@ -1,0 +1,3 @@
+2026-11-19 14:15:30 [WARNING] [payment-worker] Memory utilization increased rapidly to 70% (1433MB).
+2026-11-19 14:25:10 [CRITICAL] [payment-worker] ALERT HighMemoryUsage: saturation at 92.4% (1892MB).
+2026-11-19 14:30:05 [CRITICAL] [docker] Container payment-worker-pod killed by Linux kernel OOM (Out Of Memory) Killer (Exit Code 137).

@@ -1,0 +1,5 @@
+2026-11-19 10:00:00 [INFO] [app-service] System initialization complete. Starting server on port 8080.
+2026-11-19 10:01:15 [WARNING] [app-service] High memory utilization: 72% of threshold.
+2026-11-19 10:02:30 [ERROR] [auth-service] Connection refused: Unable to connect to postgresql://admin:secret123@db:5432/auth
+2026-11-19 10:03:00 [CRITICAL] [payment-service] Fatal crash in transaction pipeline.
+Unstructured plain log line without brackets or standard timestamp.

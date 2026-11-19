@@ -1,0 +1,3 @@
+2026-11-19 10:02:15 [ERROR] [auth-service] TimeoutError: QueuePool limit of size 5 overflow 10 reached, connection timed out.
+2026-11-19 10:02:45 [ERROR] [database] AWS RDS PostgreSQL: Connection acquisition latency exceeded 5000ms.
+2026-11-19 10:03:00 [CRITICAL] [auth-service] could not obtain connection from pool within 30.00 seconds.
