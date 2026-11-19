@@ -35,7 +35,6 @@ Powered by AI-assisted investigation and evidence correlation, Causiq helps engi
 - [Demo Scenarios](#demo-scenarios)
 - [Future Roadmap](#future-roadmap)
 - [Contributing](#contributing)
-- [License](#license)
 - [Vision](#vision)
 
 ---
