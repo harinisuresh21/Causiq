@@ -1,0 +1,95 @@
+
+# ==============================
+# Logs
+# ==============================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================
+# Dependencies
+# ==============================
+node_modules/
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==============================
+# Build outputs
+# ==============================
+dist/
+dist-ssr/
+build/
+*.local
+
+# ==============================
+# Environment variables / Secrets
+# ==============================
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# ==============================
+# Python
+# ==============================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.eggs/
+wheels/
+
+# ==============================
+# Database
+# ==============================
+*.db
+*.sqlite
+*.sqlite3
+
+# ==============================
+# Uploaded files
+# ==============================
+uploads/
+temp/
+tmp/
+
+# ==============================
+# Editor directories and files
+# ==============================
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ==============================
+# OS files
+# ==============================
+Thumbs.db
+rootcause.db
+Desktop.ini
+
+# ==============================
+# Testing
+# ==============================
+.coverage.*
+.pytest_cache/
+
+# ==============================
+# Docker
+# ==============================
+*.pid
