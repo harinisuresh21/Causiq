@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Coverage & Test outputs
+coverage/
+*.lcov
+.coverage
+coverage.xml
+htmlcov/
+coverage_html/
+test_rootcause.db
+test-results/
+playwright-report/
+
+# Build outputs
+dist/
+build/
+.turbo/
+
+# Environment
+.env
+.env.local
+.DS_Store
+Thumbs.db

@@ -160,6 +160,7 @@ export const Investigations: React.FC = () => {
         <div className="flex items-center gap-4">
           <select
             value={selectedIncidentId}
+            aria-label="Select active incident for investigation"
             onChange={(e) => {
               setSelectedIncidentId(e.target.value);
               loadInvestigation(e.target.value);
@@ -331,13 +332,13 @@ export const Investigations: React.FC = () => {
                                 : 'bg-gray-800 text-gray-400'
                             }`}
                           >
-                            {hyp.likelihood.toUpperCase()} LIKELIHOOD
+                            {(hyp.likelihood || 'low').toUpperCase()} LIKELIHOOD
                           </span>
                         </div>
                         <p className="text-[11px] text-gray-400 leading-relaxed">{hyp.explanation}</p>
                         <div className="text-[10px] text-gray-500 flex flex-wrap gap-2 pt-1 border-t border-[#1d2944]">
-                          <span>Supporting: {hyp.supporting_evidence_ids.join(', ') || 'None'}</span>
-                          {hyp.missing_evidence.length > 0 && (
+                          <span>Supporting: {hyp.supporting_evidence_ids?.join(', ') || 'None'}</span>
+                          {hyp.missing_evidence && hyp.missing_evidence.length > 0 && (
                             <span className="text-amber-400/90">
                               Missing: {hyp.missing_evidence.join(', ')}
                             </span>
@@ -430,10 +431,10 @@ export const Investigations: React.FC = () => {
 
       {/* Incident Creation Workspace Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-incident-title">
           <div className="bg-[#111726] border border-[#212f4d] rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div>
-              <h2 className="text-lg font-bold text-white">Start a New Causiq Investigation</h2>
+              <h2 id="modal-incident-title" className="text-lg font-bold text-white">Start a New Causiq Investigation</h2>
               <p className="text-xs text-gray-400 mt-1">
                 Bring your engineering evidence together. Let Causiq AI investigate.
               </p>

@@ -60,9 +60,9 @@ export const LandingPage: React.FC = () => {
       <div className="absolute bottom-[-100px] left-[-100px] w-[500px] h-[400px] bg-gradient-to-tr from-rose-600/10 to-violet-600/10 blur-[130px] rounded-full pointer-events-none -z-10" />
 
       {/* Top Navbar */}
-      <nav className="h-20 border-b border-[#1a253e]/80 glass-panel sticky top-0 z-50 px-6 sm:px-12 flex items-center justify-between">
+      <nav className="h-20 border-b border-[#1a253e]/80 glass-panel sticky top-0 z-50 px-6 sm:px-12 flex items-center justify-between" aria-label="Landing Page Navigation">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-600/30 ring-1 ring-white/20 animate-float">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-600/30 ring-1 ring-white/20 animate-float" aria-hidden="true">
             <Radar className="w-5 h-5 text-white animate-spin" style={{ animationDuration: '16s' }} />
           </div>
           <div>
@@ -74,23 +74,26 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-gray-300">
-          <a href="#problem" className="hover:text-violet-400 transition-colors">The Problem</a>
-          <a href="#interactive-flow" className="hover:text-cyan-400 transition-colors">How It Investigates</a>
-          <a href="#live-sandbox" className="hover:text-emerald-400 transition-colors">Incident Telemetry</a>
-          <a href="#guardrails" className="hover:text-rose-400 transition-colors">Human-In-The-Loop</a>
+          <a href="#problem" className="hover:text-violet-400 transition-colors focus:ring-2 focus:ring-violet-500 focus:outline-none rounded">The Problem</a>
+          <a href="#interactive-flow" className="hover:text-cyan-400 transition-colors focus:ring-2 focus:ring-violet-500 focus:outline-none rounded">How It Investigates</a>
+          <a href="#live-sandbox" className="hover:text-emerald-400 transition-colors focus:ring-2 focus:ring-violet-500 focus:outline-none rounded">Incident Telemetry</a>
+          <a href="#guardrails" className="hover:text-rose-400 transition-colors focus:ring-2 focus:ring-violet-500 focus:outline-none rounded">Human-In-The-Loop</a>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/app')}
-            className="group relative inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 text-white text-xs font-bold tracking-wide shadow-xl shadow-violet-600/25 hover:shadow-violet-600/40 hover:scale-[1.03] transition-all cursor-pointer ring-1 ring-white/25"
+            aria-label="Launch Causiq Studio Application"
+            className="group relative inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 text-white text-xs font-bold tracking-wide shadow-xl shadow-violet-600/25 hover:shadow-violet-600/40 hover:scale-[1.03] transition-all cursor-pointer ring-1 ring-white/25 focus:ring-2 focus:ring-violet-500 focus:outline-none"
           >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-200 animate-spin" style={{ animationDuration: '8s' }} />
+            <Sparkles className="w-3.5 h-3.5 text-cyan-200 animate-spin" style={{ animationDuration: '8s' }} aria-hidden="true" />
             <span>Try Causiq</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
           </button>
         </div>
       </nav>
+
+      <main id="main-content">
 
       {/* Hero Section */}
       <section className="pt-20 pb-16 px-6 sm:px-12 max-w-7xl mx-auto text-center flex flex-col items-center">
@@ -431,8 +434,10 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      </main>
+
       {/* Footer */}
-      <footer className="mt-auto border-t border-[#1a253e] bg-[#070b16] py-10 px-6 sm:px-12">
+      <footer className="mt-auto border-t border-[#1a253e] bg-[#070b16] py-10 px-6 sm:px-12" role="contentinfo">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-md">

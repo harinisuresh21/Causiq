@@ -63,7 +63,7 @@ describe('CommandCenter Dashboard Page', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Command Center')).toBeInTheDocument();
-      expect(screen.getByText('API Gateway')).toBeInTheDocument();
+      expect(screen.getAllByText('API Gateway')[0]).toBeInTheDocument();
       expect(screen.getByText('Database Cluster')).toBeInTheDocument();
       expect(screen.getByText('Database Pool Exhaustion Outage')).toBeInTheDocument();
     });

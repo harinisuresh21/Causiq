@@ -26,7 +26,7 @@ export function App() {
               <Sidebar activeCount={1} />
               <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <Navbar />
-                <main className="flex-1 overflow-hidden relative">
+                <main id="main-content" className="flex-1 overflow-hidden relative" role="main" aria-label="Main Content">
                   <Routes>
                     <Route path="/" element={<CommandCenter />} />
                     <Route path="/investigations" element={<Investigations />} />

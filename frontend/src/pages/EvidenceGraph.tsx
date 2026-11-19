@@ -206,6 +206,7 @@ export const EvidenceGraph: React.FC = () => {
           <h1 className="text-sm font-bold text-white">Interactive Evidence Relationship Graph</h1>
           <select
             value={selectedIncidentId}
+            aria-label="Select incident to view evidence DAG"
             onChange={(e) => handleIncidentChange(e.target.value)}
             className="bg-[#131b2f] border border-[#233152] rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-violet-500 ml-2"
           >

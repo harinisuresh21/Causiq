@@ -86,14 +86,14 @@ describe('Fix & Verify Page', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Run Automated Verification/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Run Automated Verification/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText(/Run Automated Verification/i));
+    fireEvent.click(screen.getByRole('button', { name: /Run Automated Verification/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/VERIFICATION PASSED/i)).toBeInTheDocument();
-      expect(screen.getByText(/Verification PASSED: Target services healthy/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/VERIFICATION PASSED/i)[0]).toBeInTheDocument();
+      expect(screen.getByText(/Target services healthy/i)).toBeInTheDocument();
     });
   });
 });

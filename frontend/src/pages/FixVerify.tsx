@@ -119,6 +119,7 @@ export const FixVerify: React.FC = () => {
         <div className="flex items-center gap-3">
           <select
             value={selectedIncidentId}
+            aria-label="Select incident for fix verification"
             onChange={(e) => {
               setSelectedIncidentId(e.target.value);
               loadIncident(e.target.value);
@@ -211,6 +212,7 @@ export const FixVerify: React.FC = () => {
 
           <textarea
             rows={4}
+            aria-label="Post-mitigation verification telemetry"
             placeholder="e.g. 2026-11-19 10:15:00 [INFO] [auth-service] Health check 200 OK. Active pool connections: 12/50. Error rate 0.00%."
             value={verificationInput}
             onChange={(e) => setVerificationInput(e.target.value)}

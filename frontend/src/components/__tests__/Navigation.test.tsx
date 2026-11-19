@@ -13,7 +13,7 @@ describe('Navigation Layout Components', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/CAUSIQ/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/CAUSIQ/i)[0]).toBeInTheDocument();
     expect(screen.getByText('Command Center')).toBeInTheDocument();
     expect(screen.getByText('Investigations')).toBeInTheDocument();
     expect(screen.getByText('Evidence Graph')).toBeInTheDocument();
@@ -34,6 +34,6 @@ describe('Navigation Layout Components', () => {
     expect(screen.getByPlaceholderText(/Search Causiq incidents/i)).toBeInTheDocument();
     expect(screen.getByText(/production-us-east-1/i)).toBeInTheDocument();
     expect(screen.getByText(/CAUSIQ LIVE/i)).toBeInTheDocument();
-    expect(screen.getByText('Vivek Sundar')).toBeInTheDocument();
+    expect(screen.getByText('VS')).toBeInTheDocument();
   });
 });

@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeCount = 1 }) => {
   ];
 
   return (
-    <aside className="w-64 bg-[#0a0f1d] border-r border-[#1a253e] flex flex-col justify-between shrink-0 select-none">
+    <aside className="w-64 bg-[#0a0f1d] border-r border-[#1a253e] flex flex-col justify-between shrink-0 select-none" role="navigation" aria-label="Sidebar Navigation">
       <div>
         {/* Brand Header with Return to Landing Link */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-[#1a253e]">
@@ -40,8 +40,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeCount = 1 }) => {
             onClick={() => navigate('/')}
             className="flex items-center gap-3 cursor-pointer group"
             title="Return to Causiq Home"
+            role="button"
+            tabIndex={0}
+            aria-label="Causiq AI Home"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform" aria-hidden="true">
               <Radar className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -54,15 +58,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeCount = 1 }) => {
 
           <button
             onClick={() => navigate('/')}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-[#141d34] transition-colors"
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-[#141d34] transition-colors focus:ring-2 focus:ring-violet-500 focus:outline-none"
             title="Landing Page"
+            aria-label="Return to Landing Page"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Navigation Links */}
-        <nav className="p-3 space-y-1">
+        <nav className="p-3 space-y-1" aria-label="Primary Workspace Navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -70,8 +75,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeCount = 1 }) => {
                 key={item.name}
                 to={item.path}
                 end={item.path === '/app'}
+                aria-label={item.badge ? `${item.name}, ${item.badge}` : item.name}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all focus:ring-2 focus:ring-violet-500 focus:outline-none ${
                     isActive
                       ? 'bg-gradient-to-r from-violet-600/20 to-indigo-600/10 text-white border border-violet-500/40 shadow-sm'
                       : 'text-gray-400 hover:text-gray-200 hover:bg-[#121a2f]'
@@ -79,11 +85,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeCount = 1 }) => {
                 }
               >
                 <div className="flex items-center gap-3">
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse" aria-label={`${item.badge}`}>
                     {item.badge}
                   </span>
                 )}

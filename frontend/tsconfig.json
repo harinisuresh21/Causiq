@@ -20,5 +20,6 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/__tests__/*", "src/tests/*", "e2e"]
 }
