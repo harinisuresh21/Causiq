@@ -126,7 +126,7 @@ export const Investigations: React.FC = () => {
         ];
       }
 
-      const res = await api.createIncident({
+      const res: any = await api.createIncident({
         title: newTitle || (selectedScenario ? scenarios.find(s => s.id === selectedScenario)?.title : 'Custom Incident'),
         description: newDesc,
         severity: newSeverity,
